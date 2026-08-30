@@ -162,6 +162,14 @@ export class ChatRunner {
         costMode: 'free',
         signal: this.abortController.signal,
       })
+      // The SDK reports a failed agent loop as a resolved RunState whose
+      // output is an error object (it emits start/finish but no text), so
+      // surface it here — otherwise the chat would silently do nothing.
+      const output = (runState as { output?: { type?: string; message?: string } })
+        ?.output
+      if (output && output.type === 'error' && output.message) {
+        this.events.onError(output.message)
+      }
       this.previousRun = runState
       return runState
     } catch (error) {
