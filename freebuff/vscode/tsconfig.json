@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "lib": ["ES2022", "DOM"],
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@codebuff/common/constants/freebuff-models": [
+        "../../common/src/constants/freebuff-models"
+      ],
+      "@codebuff/common/constants/free-agents": [
+        "../../common/src/constants/free-agents"
+      ],
+      "@codebuff/common/types/freebuff-session": [
+        "../../common/src/types/freebuff-session"
+      ],
+      "@shared/*": ["src/shared/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

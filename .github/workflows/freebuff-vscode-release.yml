@@ -1,0 +1,53 @@
+name: Freebuff VS Code Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'freebuff/vscode/**'
+      - 'common/src/constants/freebuff-models.ts'
+      - 'common/src/constants/free-agents.ts'
+      - 'common/src/types/freebuff-session.ts'
+
+jobs:
+  build:
+    name: Build & Package VSIX
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        working-directory: freebuff/vscode
+        run: npm install --no-audit --no-fund
+
+      - name: Typecheck
+        working-directory: freebuff/vscode
+        run: npm run typecheck
+
+      - name: Build bundles
+        working-directory: freebuff/vscode
+        run: npm run build
+
+      - name: Copy runtime assets
+        working-directory: freebuff/vscode
+        run: npm run copy-assets
+
+      - name: Package VSIX
+        working-directory: freebuff/vscode
+        run: npx vsce package --no-dependencies --allow-missing-repository -o freebuff-vscode.vsix
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      - name: Audit VSIX contents
+        working-directory: freebuff/vscode
+        run: npx vsce ls --no-dependencies | head -50
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: freebuff-vscode
+          path: freebuff/vscode/freebuff-vscode.vsix

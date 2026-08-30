@@ -1,0 +1,116 @@
+{
+  "name": "freebuff",
+  "displayName": "Freebuff",
+  "description": "Free AI coding agent for VS Code and VSCodium — chat, edit files, run commands, powered by Freebuff's free model catalog.",
+  "version": "0.1.0",
+  "publisher": "freebuff",
+  "license": "Apache-2.0",
+  "icon": "media/icon.png",
+  "engines": {
+    "vscode": "^1.99.0",
+    "node": ">=22.0.0"
+  },
+  "categories": [
+    "AI",
+    "Chat",
+    "Programming Languages",
+    "Education"
+  ],
+  "keywords": [
+    "ai",
+    "agent",
+    "chat",
+    "free",
+    "coding assistant"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CodebuffAI/freebuff"
+  },
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "freebuff",
+          "title": "Freebuff",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "freebuff": [
+        {
+          "type": "webview",
+          "id": "freebuff.chat",
+          "name": "Freebuff"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "freebuff.signIn",
+        "title": "Freebuff: Sign In"
+      },
+      {
+        "command": "freebuff.signOut",
+        "title": "Freebuff: Sign Out"
+      },
+      {
+        "command": "freebuff.newChat",
+        "title": "Freebuff: New Chat"
+      },
+      {
+        "command": "freebuff.selectModel",
+        "title": "Freebuff: Select Model"
+      },
+      {
+        "command": "freebuff.stopRun",
+        "title": "Freebuff: Stop Current Run"
+      }
+    ],
+    "configuration": {
+      "title": "Freebuff",
+      "properties": {
+        "freebuff.autoApproveEdits": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically approve file edits without showing a diff."
+        },
+        "freebuff.autoApproveTerminal": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically approve terminal commands without asking."
+        },
+        "freebuff.appUrl": {
+          "type": "string",
+          "default": "https://codebuff.com",
+          "description": "Base URL of the Freebuff backend."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "node esbuild.mjs --production",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "copy-assets": "node scripts/copy-assets.mjs",
+    "package": "npm run build && npm run copy-assets && vsce package"
+  },
+  "dependencies": {
+    "@codebuff/sdk": "0.10.7"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/vscode": "^1.99.0",
+    "@vscode/vsce": "^3.2.1",
+    "esbuild": "^0.24.0",
+    "marked": "^15.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.5.4"
+  }
+}
