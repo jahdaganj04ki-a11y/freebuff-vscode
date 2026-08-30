@@ -6,22 +6,36 @@ on:
     branches: [main]
     paths:
       - 'freebuff/vscode/**'
-      - 'common/src/constants/freebuff-models.ts'
-      - 'common/src/constants/free-agents.ts'
-      - 'common/src/types/freebuff-session.ts'
+      - 'common/src/**'
+      - 'sdk/src/**'
+      - 'packages/**'
+      - 'agents/**'
+      - '.github/workflows/freebuff-vscode-release.yml'
 
 jobs:
   build:
     name: Build & Package VSIX
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+
+      # The extension bundles the monorepo SDK from source (sdk/src, common/src,
+      # packages/*), so those files' own imports (zod, ai, @ai-sdk/*, …) must be
+      # resolvable. A root workspace install provides them in the root
+      # node_modules that tsc and esbuild walk up to.
+      - name: Install monorepo workspace dependencies
+        run: bun install
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Install dependencies
+      - name: Install extension dependencies
         working-directory: freebuff/vscode
         run: npm install --no-audit --no-fund
 
@@ -40,8 +54,6 @@ jobs:
       - name: Package VSIX
         working-directory: freebuff/vscode
         run: npx vsce package --no-dependencies --allow-missing-repository -o freebuff-vscode.vsix
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
 
       - name: Audit VSIX contents
         working-directory: freebuff/vscode
