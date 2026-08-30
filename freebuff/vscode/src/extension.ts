@@ -106,6 +106,8 @@ class FreebuffPanel implements vscode.WebviewViewProvider {
   private models: ModelInfo[] = []
   private session: SessionInfo = { status: 'signed_out' }
   private running = false
+  /** Free-session instance pinned for the in-flight run (survives poller resets). */
+  private runInstanceId: string | null = null
   private runner: ChatRunner | null = null
   private toolGate: ToolGate | null = null
   private poller: FreebuffSessionPoller | null = null
@@ -210,9 +212,13 @@ class FreebuffPanel implements vscode.WebviewViewProvider {
       },
     )
     this.poller.start()
-    // Let the injected fetch wrapper attach the active free-session instance to
-    // chat-completions calls so the backend's 412 precondition is satisfied.
-    setFreebuffInstanceProvider(() => this.poller?.getInstanceId() ?? null)
+    // The injected fetch wrapper attaches the active free-session instance to
+    // chat-completions calls so the backend's waiting-room precondition is
+    // satisfied. Prefer the instance pinned for the in-flight run: a background
+    // poll can clear the poller's id between admission and completion.
+    setFreebuffInstanceProvider(
+      () => this.runInstanceId ?? this.poller?.getInstanceId() ?? null,
+    )
   }
 
   private ensureRunner(): ChatRunner {
@@ -528,12 +534,23 @@ class FreebuffPanel implements vscode.WebviewViewProvider {
       return match ? { mediaType: match[1], data: match[2] } : { mediaType: 'image/png', data: dataUrl }
     })
 
+    // Pin the admitted instance for the whole run so a background poll that
+    // clears the poller's id can't strip the header mid-completion.
+    this.runInstanceId =
+      admission && 'instanceId' in admission && admission.instanceId
+        ? admission.instanceId
+        : this.poller?.getInstanceId() ?? null
+
     const runner = this.ensureRunner()
-    await runner.send(
-      prompt,
-      parsedImages.map((image) => image.data),
-      modelId,
-    )
+    try {
+      await runner.send(
+        prompt,
+        parsedImages.map((image) => image.data),
+        modelId,
+      )
+    } finally {
+      this.runInstanceId = null
+    }
     // send() returns early (no onFinish) when there is no token or no agent
     // for the model, so clear the busy flag here as well.
     this.running = false

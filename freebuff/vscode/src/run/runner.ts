@@ -170,7 +170,7 @@ export class ChatRunner {
       const output = (runState as { output?: { type?: string; message?: string } })
         ?.output
       if (output && output.type === 'error' && output.message) {
-        this.events.onError(output.message)
+        this.events.onError(describeRunError(output.message))
       }
       this.previousRun = runState
       return runState
@@ -225,4 +225,17 @@ export class ChatRunner {
         break
     }
   }
+}
+
+/**
+ * Turn the SDK's raw run-error text into an actionable line. The free-mode
+ * backend sheds a session with a 428 "waiting_room_required" whose text says
+ * to send the message again; surface that instruction instead of the raw
+ * Precondition-Required stack.
+ */
+function describeRunError(message: string): string {
+  if (/waiting_room_required|free session has ended|send your message again/i.test(message)) {
+    return 'Your free session ended before the reply started. Send your message again to start a fresh one. (If it repeats, another Freebuff client — the CLI or a second window — may be holding the single free-session slot.)'
+  }
+  return message
 }
