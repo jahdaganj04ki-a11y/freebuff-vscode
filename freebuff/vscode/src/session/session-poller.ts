@@ -41,6 +41,11 @@ export class FreebuffSessionPoller {
     }
   }
 
+  /** The active free-session instance id, for the chat-completions header. */
+  public getInstanceId(): string | null {
+    return this.instanceId
+  }
+
   /** Force an immediate claim (POST) — used when the user sends a message. */
   public async join(model: string): Promise<FreebuffSessionServerResponse | null> {
     const token = this.getToken()

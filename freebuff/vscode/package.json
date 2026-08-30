@@ -58,6 +58,10 @@
         "title": "Freebuff: Sign Out"
       },
       {
+        "command": "freebuff.switchAccount",
+        "title": "Freebuff: Switch Account"
+      },
+      {
         "command": "freebuff.newChat",
         "title": "Freebuff: New Chat"
       },
@@ -100,9 +104,31 @@
     "package": "npm run build && npm run copy-assets && vsce package"
   },
   "dependencies": {
-    "@codebuff/sdk": "0.10.7"
+    "@ai-sdk/anthropic": "2.0.50",
+    "@ai-sdk/provider": "2.0.3",
+    "@ai-sdk/provider-utils": "^3.0.17",
+    "@jitl/quickjs-wasmfile-release-sync": "0.31.0",
+    "@modelcontextprotocol/sdk": "^1.18.2",
+    "@vscode/tree-sitter-wasm": "0.1.4",
+    "ai": "^7.0.59",
+    "diff": "8.0.3",
+    "gpt-tokenizer": "^2.8.1",
+    "gray-matter": "^4.0.3",
+    "ignore": "7.0.5",
+    "ipaddr.js": "^1.9.1",
+    "lodash": "4.17.23",
+    "micromatch": "^4.0.8",
+    "partial-json": "^0.1.7",
+    "posthog-node": "^5.8.0",
+    "seedrandom": "^3.0.5",
+    "undici": "^7.28.0",
+    "web-tree-sitter": "0.25.10",
+    "ws": "^8.18.0",
+    "zod": "^4.2.1",
+    "zod-from-json-schema": "0.4.2"
   },
   "devDependencies": {
+    "@codebuff/sdk": "0.10.7",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@types/vscode": "^1.99.0",

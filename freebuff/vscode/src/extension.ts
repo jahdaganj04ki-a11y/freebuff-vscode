@@ -1,5 +1,11 @@
 import * as vscode from 'vscode'
 
+// Must run before any `@codebuff/sdk` module evaluates: env-bootstrap supplies
+// the NEXT_PUBLIC_* client env the bundled SDK validates at import, and
+// fetch-inject wires the free-session header into chat-completions calls.
+import './run/env-bootstrap'
+import { setFreebuffInstanceProvider } from './run/fetch-inject'
+
 import {
   clearUserCredentials,
   generateLoginUrl,
@@ -12,6 +18,14 @@ import { FreebuffSessionPoller } from './session/session-poller'
 import { ChatRunner, wireWasmPaths } from './run/runner'
 import { DiffContentProvider, ToolGate } from './run/tools'
 import { getDefaultModelId, getModelsForAccessTier } from './run/models'
+import {
+  activateAccountByEmail,
+  getActiveEmail,
+  listAccounts,
+  setActiveAccount,
+  syncActiveFromSharedFile,
+  upsertAccount,
+} from './accounts'
 
 import type {
   AuthInfo,
@@ -27,6 +41,8 @@ let currentPanel: FreebuffPanel | null = null
 
 export function activate(context: vscode.ExtensionContext): void {
   wireWasmPaths(context)
+  // Adopt the account the shared CLI file currently holds into the switcher.
+  syncActiveFromSharedFile(context)
 
   context.subscriptions.push(
     vscode.workspace.registerTextDocumentContentProvider(
@@ -53,6 +69,13 @@ export function activate(context: vscode.ExtensionContext): void {
   const signOut = vscode.commands.registerCommand('freebuff.signOut', () => {
     currentPanel?.signOut()
   })
+  const switchAccount = vscode.commands.registerCommand(
+    'freebuff.switchAccount',
+    () => {
+      currentPanel?.reveal()
+      currentPanel?.switchAccount()
+    },
+  )
   const newChat = vscode.commands.registerCommand('freebuff.newChat', () => {
     currentPanel?.reveal()
     currentPanel?.newChat()
@@ -68,7 +91,7 @@ export function activate(context: vscode.ExtensionContext): void {
     currentPanel?.stopRun()
   })
 
-  context.subscriptions.push(signIn, signOut, newChat, selectModel, stopRun)
+  context.subscriptions.push(signIn, signOut, switchAccount, newChat, selectModel, stopRun)
 }
 
 export function deactivate(): void {
@@ -187,6 +210,9 @@ class FreebuffPanel implements vscode.WebviewViewProvider {
       },
     )
     this.poller.start()
+    // Let the injected fetch wrapper attach the active free-session instance to
+    // chat-completions calls so the backend's 412 precondition is satisfied.
+    setFreebuffInstanceProvider(() => this.poller?.getInstanceId() ?? null)
   }
 
   private ensureRunner(): ChatRunner {
@@ -401,6 +427,9 @@ class FreebuffPanel implements vscode.WebviewViewProvider {
       case 'signOut':
         this.signOut()
         break
+      case 'switchAccount':
+        await this.switchAccount()
+        break
       case 'approveTool':
         this.toolGate?.resolveApproval(message.toolCallId, true)
         break
@@ -588,10 +617,6 @@ class FreebuffPanel implements vscode.WebviewViewProvider {
   }
 
   public async beginSignIn(): Promise<void> {
-    if (this.readAuth().signedIn) {
-      vscode.window.showInformationMessage('Freebuff: already signed in.')
-      return
-    }
     this.loginCancellation = false
     try {
       const loginData = await generateLoginUrl()
@@ -603,7 +628,8 @@ class FreebuffPanel implements vscode.WebviewViewProvider {
         () => !this.loginCancellation && !this.disposed,
       )
       if (result.status === 'success') {
-        saveUserCredentials(result.user)
+        upsertAccount(this.context, result.user)
+        setActiveAccount(this.context, result.user)
         this.runner?.resetClient()
         this.post({ type: 'auth', auth: this.readAuth() })
         this.post({
@@ -632,8 +658,41 @@ class FreebuffPanel implements vscode.WebviewViewProvider {
     this.loginCancellation = true
     void this.poller?.release()
     this.runner?.resetClient()
+    // Clear the active account (shared file) but keep the saved list so the
+    // user can switch back in without signing in again.
     clearUserCredentials()
+    void this.context.globalState.update('freebuff.activeAccountEmail', null)
     this.post({ type: 'auth', auth: { signedIn: false } })
+  }
+
+  /** QuickPick over saved accounts + "Add account"; switches the active one. */
+  public async switchAccount(): Promise<void> {
+    const accounts = listAccounts(this.context)
+    const activeEmail = getActiveEmail(this.context)
+    type Item = vscode.QuickPickItem & { email: string | null }
+    const items: Item[] = accounts.map((account) => ({
+      label: account.email,
+      description:
+        account.name + (account.email === activeEmail ? '  ✓ active' : ''),
+      email: account.email,
+    }))
+    items.push({ label: 'Add account…', description: 'Sign in with a new Freebuff account', email: null })
+
+    const picked = await vscode.window.showQuickPick(items, {
+      placeHolder: 'Switch Freebuff account',
+    })
+    if (!picked) return
+    if (picked.email === null) {
+      await this.beginSignIn()
+      return
+    }
+    if (picked.email === activeEmail) return
+    if (activateAccountByEmail(this.context, picked.email)) {
+      void this.poller?.release()
+      this.runner?.resetClient()
+      this.post({ type: 'auth', auth: this.readAuth() })
+      this.startPoller()
+    }
   }
 
   public newChat(): void {

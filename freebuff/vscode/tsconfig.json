@@ -24,6 +24,9 @@
       "@codebuff/common/types/freebuff-session": [
         "../../common/src/types/freebuff-session"
       ],
+      "@codebuff/common/types/print-mode": [
+        "../../common/src/types/print-mode"
+      ],
       "@shared/*": ["src/shared/*"]
     }
   },

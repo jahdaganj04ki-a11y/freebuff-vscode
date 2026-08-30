@@ -144,9 +144,13 @@ export function App() {
       <header className="header">
         <span className="brand">Freebuff</span>
         {auth.signedIn ? (
-          <span className="auth-chip" title={auth.email}>
-            {auth.email ?? auth.name}
-          </span>
+          <button
+            className="auth-chip clickable"
+            title="Switch account"
+            onClick={() => post({ type: 'switchAccount' })}
+          >
+            {auth.email ?? auth.name} <span className="switch-glyph">⇄</span>
+          </button>
         ) : (
           <span className="auth-chip signed-out">signed out</span>
         )}

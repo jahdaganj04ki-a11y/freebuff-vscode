@@ -93,6 +93,7 @@ export type WebviewMessage =
   | { type: 'selectModel'; modelId: string }
   | { type: 'signIn' }
   | { type: 'signOut' }
+  | { type: 'switchAccount' }
   | { type: 'approveTool'; toolCallId: string }
   | { type: 'rejectTool'; toolCallId: string }
   | {

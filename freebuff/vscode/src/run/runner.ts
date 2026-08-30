@@ -10,12 +10,13 @@ import * as fs from 'fs'
 import {
   CodebuffClient,
   setWasmDir,
-  type PrintModeEvent,
   type RunState,
 } from '@codebuff/sdk'
+import type { PrintModeEvent } from '@codebuff/common/types/print-mode'
 
 import { formatToolOutput, summarizeToolCall } from './tools'
 import { getRootAgentIdForModel } from './models'
+import { FREE_AGENT_DEFINITIONS } from './free-agents'
 
 export interface RunnerEvents {
   onText: (text: string) => void
@@ -135,6 +136,7 @@ export class ChatRunner {
       this.client = new CodebuffClient({
         apiKey,
         cwd: this.cwd,
+        agentDefinitions: FREE_AGENT_DEFINITIONS,
         overrideTools: this.buildOverrides(),
         handleEvent: (event) => this.handleEvent(event),
       })

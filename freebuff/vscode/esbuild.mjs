@@ -24,27 +24,21 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const production = process.argv.includes('--production')
 const watch = process.argv.includes('--watch')
 
-const commonAlias = {
-  '@codebuff/common/constants/freebuff-models': resolve(
-    __dirname,
-    '../../common/src/constants/freebuff-models',
-  ),
-  '@codebuff/common/constants/free-agents': resolve(
-    __dirname,
-    '../../common/src/constants/free-agents',
-  ),
-  '@codebuff/common/types/freebuff-session': resolve(
-    __dirname,
-    '../../common/src/types/freebuff-session',
-  ),
-}
-
-// The SDK is dual-format. Bundling from ESM source would inline its top-level
-// `createRequire(import.meta.url)`, which is undefined in a CJS bundle — so
-// pin the SDK to its official CJS entry instead.
+// Bundle the monorepo SDK from source (the published 0.10.7 package cannot
+// speak the current free-mode wire protocol). The workspace packages are
+// aliased to their src trees so the extension matches the CLI exactly.
 const hostAlias = {
-  ...commonAlias,
-  '@codebuff/sdk': resolve(__dirname, 'node_modules/@codebuff/sdk/dist/index.cjs'),
+  '@codebuff/sdk': resolve(__dirname, '../../sdk/src/index.ts'),
+  '@codebuff/common': resolve(__dirname, '../../common/src'),
+  '@codebuff/llm-providers': resolve(
+    __dirname,
+    '../../packages/llm-providers/src',
+  ),
+  '@codebuff/agent-runtime': resolve(
+    __dirname,
+    '../../packages/agent-runtime/src',
+  ),
+  '@codebuff/code-map': resolve(__dirname, '../../packages/code-map/src'),
 }
 
 const hostOptions = {
@@ -54,8 +48,16 @@ const hostOptions = {
   format: 'cjs',
   platform: 'node',
   target: 'node22',
-  external: ['vscode'],
+  external: [
+    'vscode',
+    '@jitl/quickjs-wasmfile-release-sync',
+    '@vscode/tree-sitter-wasm',
+  ],
   alias: hostAlias,
+  // The monorepo source files live outside this package, so their third-party
+  // imports must resolve against the extension's own node_modules.
+  nodePaths: [resolve(__dirname, 'node_modules')],
+  loader: { '.scm': 'text' },
   sourcemap: !production,
   minify: production,
   logLevel: 'info',
