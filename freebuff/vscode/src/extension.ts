@@ -229,7 +229,19 @@ class FreebuffPanel implements vscode.WebviewViewProvider {
           this.pushState()
         },
         onText: (text) => this.appendAssistantText(text),
-        onReasoning: () => undefined,
+        onReasoning: (text) => this.appendReasoning(text),
+        onSubagent: (line) => {
+          this.messages = [
+            ...this.messages,
+            {
+              id: `subagent-${Date.now()}-${this.messages.length}`,
+              role: 'system',
+              text: line,
+              timestamp: Date.now(),
+            },
+          ]
+          this.pushState()
+        },
         onToolCall: (toolCallId, toolName, summary) => {
           const lastMessage = this.messages[this.messages.length - 1]
           const toolCall = {
@@ -311,6 +323,29 @@ class FreebuffPanel implements vscode.WebviewViewProvider {
           id: `assistant-${Date.now()}`,
           role: 'assistant',
           text,
+          streaming: true,
+          timestamp: Date.now(),
+        },
+      ]
+    }
+    this.pushState()
+  }
+
+  private appendReasoning(text: string): void {
+    const lastMessage = this.messages[this.messages.length - 1]
+    if (lastMessage && lastMessage.role === 'assistant' && lastMessage.streaming) {
+      this.messages = [
+        ...this.messages.slice(0, -1),
+        { ...lastMessage, reasoning: (lastMessage.reasoning ?? '') + text },
+      ]
+    } else {
+      this.messages = [
+        ...this.messages,
+        {
+          id: `assistant-${Date.now()}`,
+          role: 'assistant',
+          text: '',
+          reasoning: text,
           streaming: true,
           timestamp: Date.now(),
         },
@@ -648,6 +683,9 @@ class FreebuffPanel implements vscode.WebviewViewProvider {
     const scriptUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview.js'),
     )
+    const styleUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview.css'),
+    )
     const nonce = getNonce()
     return `<!DOCTYPE html>
 <html lang="en">
@@ -655,6 +693,7 @@ class FreebuffPanel implements vscode.WebviewViewProvider {
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} data:; script-src 'nonce-${nonce}'; font-src ${webview.cspSource};">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="${styleUri}">
 <style>
   html, body { height: 100%; margin: 0; padding: 0; }
   body { font-family: var(--vscode-font-family); font-size: var(--vscode-font-size); }

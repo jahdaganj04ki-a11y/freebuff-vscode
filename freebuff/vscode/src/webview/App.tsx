@@ -308,6 +308,12 @@ function MessageBubble(props: { message: ChatMessage }) {
   }
   return (
     <div className="assistant-message">
+      {message.reasoning && (
+        <details className="reasoning">
+          <summary>Reasoning</summary>
+          <div className="reasoning-text">{message.reasoning}</div>
+        </details>
+      )}
       {message.text && (
         <div
           className="markdown"

@@ -20,6 +20,7 @@ import { getRootAgentIdForModel } from './models'
 export interface RunnerEvents {
   onText: (text: string) => void
   onReasoning: (text: string) => void
+  onSubagent: (line: string) => void
   onToolCall: (toolCallId: string, toolName: string, summary: string) => void
   onToolResult: (toolCallId: string, toolName: string, detail: string, isError: boolean) => void
   onError: (message: string) => void
@@ -198,6 +199,15 @@ export class ChatRunner {
         if (!event.source) {
           this.events.onError(event.message)
         }
+        break
+      case 'reasoning_delta':
+        if (event.text) this.events.onReasoning(event.text)
+        break
+      case 'subagent_start':
+        this.events.onSubagent(`↳ Subagent "${event.displayName}" started`)
+        break
+      case 'subagent_finish':
+        this.events.onSubagent(`↳ Subagent "${event.displayName}" finished`)
         break
       case 'finish':
         break

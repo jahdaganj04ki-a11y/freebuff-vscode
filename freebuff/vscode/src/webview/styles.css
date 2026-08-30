@@ -129,6 +129,29 @@
   margin-left: auto;
 }
 
+/* Reasoning */
+.reasoning {
+  margin: 0 0 8px;
+  border-left: 2px solid var(--vscode-panel-border, #555);
+  padding-left: 8px;
+}
+
+.reasoning summary {
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  user-select: none;
+}
+
+.reasoning-text {
+  margin-top: 4px;
+  font-size: 11px;
+  white-space: pre-wrap;
+  color: var(--vscode-descriptionForeground);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
 /* Messages */
 .message-list {
   flex: 1;

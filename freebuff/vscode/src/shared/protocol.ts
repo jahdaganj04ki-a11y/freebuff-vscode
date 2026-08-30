@@ -62,6 +62,8 @@ export interface ChatMessage {
   text: string
   images?: string[]
   toolCalls?: ToolCallInfo[]
+  /** Accumulated model reasoning for this assistant turn (collapsible in UI). */
+  reasoning?: string
   streaming?: boolean
   error?: boolean
   timestamp: number
