@@ -29,6 +29,12 @@ export interface RunnerEvents {
   onStarted: () => void
 }
 
+/** Token-level stream chunk from the SDK. */
+type StreamChunk =
+  | string
+  | { type: 'subagent_chunk'; agentId: string; agentType: string; chunk: string }
+  | { type: 'reasoning_chunk'; agentId: string; ancestorRunIds: string[]; chunk: string }
+
 let wasmWired = false
 
 /** Points the SDK at the wasm assets shipped inside dist/wasm. Safe to call once. */
@@ -139,6 +145,16 @@ export class ChatRunner {
         agentDefinitions: FREE_AGENT_DEFINITIONS,
         overrideTools: this.buildOverrides(),
         handleEvent: (event) => this.handleEvent(event),
+        handleStreamChunk: (chunk: StreamChunk) => {
+          if (typeof chunk === 'string') {
+            this.events.onText(chunk)
+          } else if (chunk.type === 'reasoning_chunk') {
+            this.events.onReasoning(chunk.chunk)
+          } else if (chunk.type === 'subagent_chunk') {
+            // Sub-agent chunks are surfaced as reasoning so they appear in the UI.
+            this.events.onReasoning(chunk.chunk)
+          }
+        },
       })
     }
 
