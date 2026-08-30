@@ -85,8 +85,8 @@
         },
         "freebuff.appUrl": {
           "type": "string",
-          "default": "https://codebuff.com",
-          "description": "Base URL of the Freebuff backend."
+          "default": "https://www.codebuff.com",
+          "description": "Base URL of the Freebuff backend. Keep the 'www' origin: the bare domain redirects, and following a redirect drops the Authorization header."
         }
       }
     }

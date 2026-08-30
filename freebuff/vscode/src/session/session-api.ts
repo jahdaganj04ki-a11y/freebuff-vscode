@@ -57,6 +57,35 @@ export function sessionFetchSignal(
   return signal ? AbortSignal.any([signal, timeout]) : timeout
 }
 
+/** Fetch that keeps its Authorization header across redirects: the platform
+ *  drops authorisation headers when following a cross-origin redirect (the
+ *  bare codebuff.com origin 301s to www), so each hop is re-issued here. */
+async function authedSessionFetch(
+  url: string,
+  method: FreebuffSessionMethod,
+  headers: Record<string, string>,
+  signal: AbortSignal,
+): Promise<Response> {
+  let target = url
+  for (let hop = 0; hop < 3; hop++) {
+    const response = await fetch(target, {
+      method,
+      headers,
+      redirect: 'manual',
+      signal,
+    })
+    const location = response.headers.get('location')
+    if (!location || ![301, 302, 303, 307, 308].includes(response.status)) {
+      return response
+    }
+    target = new URL(location, target).toString()
+  }
+  throw new FreebuffSessionRequestError(
+    `freebuff session ${method} redirected too many times`,
+    500,
+  )
+}
+
 export async function callFreebuffSession(
   method: FreebuffSessionMethod,
   token: string,
@@ -80,11 +109,12 @@ export async function callFreebuffSession(
     headers[FREEBUFF_MODEL_HEADER] = opts.model
   }
 
-  const response = await fetch(sessionEndpoint(), {
+  const response = await authedSessionFetch(
+    sessionEndpoint(),
     method,
     headers,
-    signal: sessionFetchSignal(opts.signal),
-  })
+    sessionFetchSignal(opts.signal),
+  )
 
   if (response.status === 404) {
     return { status: 'none' }

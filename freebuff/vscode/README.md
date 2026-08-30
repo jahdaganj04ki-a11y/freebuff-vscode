@@ -47,7 +47,7 @@ GitHub Copilot Chat.
 | --- | --- | --- |
 | `freebuff.autoApproveEdits` | `false` | Apply file edits without diff approval |
 | `freebuff.autoApproveTerminal` | `false` | Run terminal commands without approval |
-| `freebuff.appUrl` | `https://codebuff.com` | Backend base URL |
+| `freebuff.appUrl` | `https://www.codebuff.com` | Backend base URL — keep the `www` origin |
 
 ## Build from source
 

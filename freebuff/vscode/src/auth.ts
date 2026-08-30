@@ -74,9 +74,11 @@ export function clearUserCredentials(): void {
 }
 
 export function getAppUrl(): string {
+  // Must be the `www` origin: codebuff.com answers 301 -> www.codebuff.com,
+  // and fetch drops the Authorization header when following that redirect.
   return (
     vscode.workspace.getConfiguration('freebuff').get<string>('appUrl') ??
-    'https://codebuff.com'
+    'https://www.codebuff.com'
   ).replace(/\/$/, '')
 }
 

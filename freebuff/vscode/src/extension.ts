@@ -456,6 +456,10 @@ class FreebuffPanel implements vscode.WebviewViewProvider {
       this.attachedFiles = []
     }
 
+    // Claim the busy flag before the admission await: runner.onStarted only
+    // fires later, and without this a second Enter during the round trip
+    // would slip past the `if (this.running) return` guard above.
+    this.running = true
     this.messages = [
       ...this.messages,
       {
@@ -474,6 +478,7 @@ class FreebuffPanel implements vscode.WebviewViewProvider {
     if (admission) {
       const blocked = this.admissionBlocked(admission.status)
       if (blocked) {
+        this.running = false
         this.messages = [
           ...this.messages,
           {
@@ -500,6 +505,10 @@ class FreebuffPanel implements vscode.WebviewViewProvider {
       parsedImages.map((image) => image.data),
       modelId,
     )
+    // send() returns early (no onFinish) when there is no token or no agent
+    // for the model, so clear the busy flag here as well.
+    this.running = false
+    this.pushState()
   }
 
   private admissionBlocked(status: string): string | null {
