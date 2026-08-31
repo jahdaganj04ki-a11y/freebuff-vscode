@@ -2,6 +2,16 @@ name: Freebuff VS Code Release
 
 on:
   workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: false
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
   push:
     branches: [main]
     paths:
@@ -19,6 +29,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -57,9 +69,32 @@ jobs:
 
       - name: Audit VSIX contents
         working-directory: freebuff/vscode
-        run: npx vsce ls --no-dependencies | head -50
+        run: |
+          echo "=== VSIX Contents ==="
+          npx vsce ls --no-dependencies | head -80
+          echo ""
+          echo "=== VSIX Size ==="
+          ls -lh freebuff-vscode.vsix
 
       - uses: actions/upload-artifact@v4
         with:
           name: freebuff-vscode
           path: freebuff/vscode/freebuff-vscode.vsix
+          retention-days: 30
+
+      - name: Create GitHub Release (if manual trigger)
+        if: github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: freebuff/vscode/freebuff-vscode.vsix
+          tag_name: vscode-v${{ github.run_number }}
+          name: "VS Code Extension v${{ github.run_number }}"
+          body: |
+            Auto-generated VSIX build from commit ${{ github.sha }}
+            
+            Triggered by: ${{ github.actor }}
+            Version bump: ${{ inputs.version_bump || 'patch' }}
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
