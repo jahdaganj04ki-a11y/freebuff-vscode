@@ -9,6 +9,7 @@
  */
 
 import type { AgentDefinition } from '@codebuff/sdk'
+import type { MCPConfig } from '@codebuff/common/types/mcp'
 import { loadUserMCPConfig } from './mcp-config'
 
 const BASE_AGENTS: AgentDefinition[] = [
@@ -36,11 +37,23 @@ export async function loadFreeAgentDefinitions(): Promise<AgentDefinition[]> {
 
   // Merge MCP servers into each agent definition so the SDK can route
   // tool calls through the MCP client when an agent references them.
+  // Filter out invalid configs (those without required 'command' field)
+  const validMcpServers: Record<string, MCPConfig> = {}
+  for (const [name, config] of Object.entries(mcpConfig.mcpServers)) {
+    if ('command' in config && config.command) {
+      validMcpServers[name] = config as MCPConfig
+    }
+  }
+
+  if (Object.keys(validMcpServers).length === 0) {
+    return BASE_AGENTS
+  }
+
   return BASE_AGENTS.map((agent) => ({
     ...agent,
     mcpServers: {
       ...agent.mcpServers,
-      ...mcpConfig.mcpServers,
+      ...validMcpServers,
     },
   }))
 }
