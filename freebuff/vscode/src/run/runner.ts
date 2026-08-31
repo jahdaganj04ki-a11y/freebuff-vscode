@@ -16,7 +16,7 @@ import type { PrintModeEvent } from '@codebuff/common/types/print-mode'
 
 import { formatToolOutput, summarizeToolCall } from './tools'
 import { getRootAgentIdForModel } from './models'
-import { FREE_AGENT_DEFINITIONS } from './free-agents'
+import { loadFreeAgentDefinitions, FREE_AGENT_DEFINITIONS } from './free-agents'
 
 export interface RunnerEvents {
   onText: (text: string) => void
@@ -94,6 +94,7 @@ export class ChatRunner {
   private abortController: AbortController | null = null
   private previousRun: RunState | null = null
   private _running = false
+  private agentDefinitionsPromise: Promise<typeof FREE_AGENT_DEFINITIONS> | null = null
 
   public constructor(
     private cwd: string,
@@ -104,6 +105,20 @@ export class ChatRunner {
 
   public get running(): boolean {
     return this._running
+  }
+
+  /**
+   * Lazily load agent definitions with MCP config merged in.
+   * Falls back to static definitions if async load fails.
+   */
+  private async getAgentDefinitions(): Promise<typeof FREE_AGENT_DEFINITIONS> {
+    if (!this.agentDefinitionsPromise) {
+      this.agentDefinitionsPromise = loadFreeAgentDefinitions().catch((err) => {
+        console.warn('[ChatRunner] Failed to load MCP agents, using static definitions:', err)
+        return FREE_AGENT_DEFINITIONS
+      })
+    }
+    return this.agentDefinitionsPromise
   }
 
   public resetClient(): void {
@@ -138,11 +153,14 @@ export class ChatRunner {
       return null
     }
 
+    // Load agent definitions with MCP config (lazy, cached)
+    const agentDefinitions = await this.getAgentDefinitions()
+
     if (!this.client) {
       this.client = new CodebuffClient({
         apiKey,
         cwd: this.cwd,
-        agentDefinitions: FREE_AGENT_DEFINITIONS,
+        agentDefinitions,
         overrideTools: this.buildOverrides(),
         handleEvent: (event) => this.handleEvent(event),
         handleStreamChunk: (chunk: StreamChunk) => {

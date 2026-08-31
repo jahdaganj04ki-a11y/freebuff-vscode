@@ -15,21 +15,14 @@
     "types": ["node"],
     "baseUrl": ".",
     "paths": {
-      "@codebuff/common/constants/freebuff-models": [
-        "../../common/src/constants/freebuff-models"
-      ],
-      "@codebuff/common/constants/free-agents": [
-        "../../common/src/constants/free-agents"
-      ],
-      "@codebuff/common/types/freebuff-session": [
-        "../../common/src/types/freebuff-session"
-      ],
-      "@codebuff/common/types/print-mode": [
-        "../../common/src/types/print-mode"
-      ],
+      "@codebuff/sdk": ["../../sdk/src/index.ts"],
+      "@codebuff/common/*": ["../../common/src/*"],
+      "@codebuff/llm-providers/*": ["../../packages/llm-providers/src/*"],
+      "@codebuff/agent-runtime/*": ["../../packages/agent-runtime/src/*"],
+      "@codebuff/code-map/*": ["../../packages/code-map/src/*"],
       "@shared/*": ["src/shared/*"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "src/types/**/*.d.ts"],
   "exclude": ["node_modules", "dist"]
 }
